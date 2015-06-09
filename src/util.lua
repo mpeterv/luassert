@@ -1,5 +1,5 @@
 local util = {}
-function util.deepcompare(t1,t2,ignore_mt,cache1,cache2)
+function util.deepcompare(t1,t2,ignore_mt,cache)
   local ty1 = type(t1)
   local ty2 = type(t2)
   -- non-table types can be directly compared
@@ -15,16 +15,14 @@ function util.deepcompare(t1,t2,ignore_mt,cache1,cache2)
   end
 
   -- handle recursive tables
-  local cache1 = cache1 or {}
-  local cache2 = cache2 or {}
-  cache1[t1] = (cache1[t1] or 0)
-  cache2[t2] = (cache2[t2] or 0)
-  if cache1[t1] > 0 and cache2[t2] > 0 then
+  cache = cache or {}
+  cache[t1] = cache[t1] or {}
+
+  if cache[t1][t2] or (cache[t2] and cache[t2][t1]) then
     return true
   end
 
-  cache1[t1] = cache1[t1] + 1
-  cache2[t2] = cache2[t2] + 1
+  cache[t1][t2] = true
 
   for k1,v1 in pairs(t1) do
     local v2 = t2[k1]
@@ -32,7 +30,7 @@ function util.deepcompare(t1,t2,ignore_mt,cache1,cache2)
       return false, {k1}
     end
 
-    local same, crumbs = util.deepcompare(v1,v2,nil,cache1,cache2)
+    local same, crumbs = util.deepcompare(v1,v2,nil,cache)
     if not same then
       crumbs = crumbs or {}
       table.insert(crumbs, k1)
@@ -44,9 +42,6 @@ function util.deepcompare(t1,t2,ignore_mt,cache1,cache2)
     -- has been done in first loop above
     if t1[k2] == nil then return false, {k2} end
   end
-
-  cache1[t1] = cache1[t1] - 1
-  cache2[t2] = cache2[t2] - 1
 
   return true
 end
